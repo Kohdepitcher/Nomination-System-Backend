@@ -22,6 +22,10 @@ export class User extends BaseEntity {
     @Column({ nullable: false, default: AuthRoles.Trainer })
     role: AuthRoles;
 
+    /*
+        Relationships
+        * one to many between nominations and users, i.e. a user can have many nominations but a nomination can only have a single user
+    */
     @OneToMany(type => Nomination, nomination => nomination.user)
     nominations: Nomination[]
 
