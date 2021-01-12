@@ -1,6 +1,6 @@
 import { Application } from "express";
 
-import { getAllNominations, createNominaton, getSpecificNomination, updateNomination} from '../nominations/nominaiton-controller'
+import { getAllNominations, createNominaton, getSpecificNomination, updateNomination, getTrainersAndNominationsCountForMeeting} from '../nominations/nominaiton-controller'
 
 import { isAuthenticated } from "../auth/authenticated";
 import { isAuthorized } from "../auth/authorized";
@@ -28,6 +28,12 @@ export function nominationRoutesConfig(app: Application) {
         isAuthenticated,
         isAuthorized({ hasRole: ['admin', 'manager'], allowSameUser: true }),
         getSpecificNomination
+    ]);
+
+    app.get('/nominations/group-trainers-count/:meetingID', [
+        // isAuthenticated,
+        // isAuthorized({ hasRole: ['admin', 'manager'], allowSameUser: true }),
+        getTrainersAndNominationsCountForMeeting
     ]);
 
     // updates :id nomination
