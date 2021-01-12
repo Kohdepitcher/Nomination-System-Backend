@@ -37,7 +37,9 @@ export class TrialMeeting extends BaseEntity {
     @Column('datetime')
     modifiedAt: Date;
 
-    @OneToMany(type => Nomination, nomination => nomination.trialDate)
+    //Relationships
+    //NOTE: a cascade deletion exists between meetings and nominations so that when a meeting is removed so will all the nominations for it
+    @OneToMany(type => Nomination, nomination => nomination.trialDate, {cascade: true, onDelete: "CASCADE"})
     nominations: Nomination[]
 
     //add data before insertion
