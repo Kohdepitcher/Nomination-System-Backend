@@ -236,6 +236,9 @@ export async function getTrainersAndNominationsCountForMeeting(request: Request,
     //only execute for the meeting that matches the meetingID
     .where('trialDate.meetingID = :id', { id: meetingID })
 
+    //filter out scratched nominations
+    .andWhere('nomination.isScratched = false')
+
     //return raw result since it doesnt match an entity
     .getRawMany()
 
