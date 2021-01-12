@@ -1,5 +1,15 @@
+/*
+
+    The purpose of this class is to handle buisness logic relating to users 
+
+*/
+
+
+
+
 import { Request, Response } from "express";
 import * as admin from 'firebase-admin'
+import { UserRecord } from "firebase-functions/lib/providers/auth";
 
 
 import { connect } from '../config';
@@ -104,7 +114,7 @@ export class userController {
             try {
 
                 //default role
-                const defaultRole = AuthRoles.Trainer;
+                const role = AuthRoles.Trainer;
 
                 //if any of the required fields are empty
                 if (!displayName) {
@@ -134,7 +144,7 @@ export class userController {
                 })
 
                 //set the custom role claim
-                await admin.auth().setCustomUserClaims(uid, { defaultRole })
+                await admin.auth().setCustomUserClaims(uid, { role })
 
                 //create new connection to DB
                 const connection = await connect();
@@ -152,14 +162,17 @@ export class userController {
                 //name is the display name
                 newUser.name = displayName;
 
-                newUser.role = defaultRole;
+                newUser.role = role;
 
                 //save the user in DB
-                const savedUser = await repo.save(newUser);
+                await repo.save(newUser);
+
+                //fetch the user record from fireauth that matches the uid
+                const user = await admin.auth().getUser(uid)
 
 
                 //send success message to cleint
-                return res.status(201).send({ uid, savedUser })
+                return res.status(200).send({ user: mapUser(user) })
             } catch (err) {
                 return handleError(res, err)
             }
@@ -173,37 +186,45 @@ export class userController {
         */
        async getAllUsers(req: Request, res: Response) {
 
-            try {
+            // try {
 
-                    //create a connection to the db
-                    const connection = await connect()
+            //         //create a connection to the db
+            //         const connection = await connect()
 
-                    //get the user repo
-                    const userRepo = connection.getRepository(User);
+            //         //get the user repo
+            //         const userRepo = connection.getRepository(User);
 
-                    //store an empty array of users
-                    const mappedUsers = [];
+            //         //store an empty array of users
+            //         const mappedUsers = [];
 
-                    //fetch all the users from the DB
-                    const fetchedUsers: User[] = await userRepo.find();
+            //         //fetch all the users from the DB
+            //         const fetchedUsers: User[] = await userRepo.find();
 
-                    //iterate over all fetched users and map them to their fireauth account
-                    for (const index in fetchedUsers) {
+            //         //iterate over all fetched users and map them to their fireauth account
+            //         for (const index in fetchedUsers) {
 
-                        //fireauth user
-                        const user = await admin.auth().getUser(fetchedUsers[index].UUID);
+            //             //fireauth user
+            //             const user = await admin.auth().getUser(fetchedUsers[index].UUID);
 
-                        //map and then push to an empty array
-                        mappedUsers.push({ user: mapUser(user), db: fetchedUsers[index]});
+            //             //map and then push to an empty array
+            //             mappedUsers.push({ user: mapUser(user), db: fetchedUsers[index]});
 
-                    }
+            //         }
 
-                    //return all the matching users
+            //         //return all the matching users
 
-                    return res.status(200).send(mappedUsers);
+            //         return res.status(200).send({users: mappedUsers});
 
-            } catch (error) {
-                return handleError(res, error)
+            // } catch (error) {
+            //     return handleError(res, error)
+            // }
+
+                        try {
+                const listUsers = await admin.auth().listUsers()
+                const users = listUsers.users.map(mapUser)
+                return res.status(200).send({users: users})
+            } catch (err) {
+                return handleError(res, err)
             }
 
        }
@@ -217,32 +238,43 @@ export class userController {
        */
        async getUser(req: Request, res: Response) {
 
+        //store the uid from the request parameters
+        const { uid } = req.params
+
+        if (!uid) {
+
+            //send 400 error to client
+            return res.status(400).send({ message: 'Missing uid in request params' })
+        }
+
             try {
 
-                //db connection
-                const connection = await connect();
+                // //db connection
+                // const connection = await connect();
 
-                //user repo
-                const userRepo = connection.getRepository(User);
-
-                //store the uid from the request parameters
-                const { uid } = req.params
+                // //user repo
+                // const userRepo = connection.getRepository(User);
 
                 //fetch a user from the db that matches the uid
-                const fetchedUser = await userRepo.findOne({UUID: uid})
+                // const fetchedUser = await userRepo.findOne({UUID: uid})
 
-                console.log(fetchedUser);
+                // console.log(fetchedUser);
+
+                
+
+
                 
 
                 //fetch the user record from fireauth that matches the uid
-                const user = await admin.auth().getUser(uid)
+                const user = await admin.auth().getUser(uid).then((userRecord) => {
+                    return userRecord
+                }).catch((error) => {
+                    return handleError(res, error)
+                })
 
-                // console.log(user);
+                // console.log(mapUser(user as UserRecord));
 
-                console.log(mapUser(user))
-                
-
-                return res.status(200).send({ user: mapUser(user), db: fetchedUser })
+                return res.status(200).send({ user: mapUser(user as UserRecord) })
             } catch (err) {
                 return handleError(res, err)
             }
@@ -258,56 +290,56 @@ export class userController {
                 displayName - the name of the user
                 email - the email address of the user
         */
-       async updateUser(req: Request, res: Response) {
+    //    async updateUser(req: Request, res: Response) {
 
-            const { displayName, email } = req.body;
+    //         const { displayName, email } = req.body;
 
-            try {
+    //         try {
 
-                const connection = await connect();
-                const userRepo = connection.getRepository(User);
+    //             const connection = await connect();
+    //             const userRepo = connection.getRepository(User);
 
-                //firest fetch the user from the db
-                //use the uid from the auth token
-                const userFromDB = await userRepo.findOne({UUID: res.locals.uid})
+    //             //firest fetch the user from the db
+    //             //use the uid from the auth token
+    //             const userFromDB = await userRepo.findOne({UUID: res.locals.uid})
 
                 
 
-                //then fetch the same user from fireauth
-                // const userfromFireAuth = await admin.auth().getUser(res.locals.uid)
+    //             //then fetch the same user from fireauth
+    //             // const userfromFireAuth = await admin.auth().getUser(res.locals.uid)
 
-                //if the email is provided
-                if (email) {
-                    await admin.auth().updateUser(res.locals.uid, {
-                        email: email
-                    });
-                }
+    //             //if the email is provided
+    //             if (email) {
+    //                 await admin.auth().updateUser(res.locals.uid, {
+    //                     email: email
+    //                 });
+    //             }
 
-                //if the name is provided
-                if (displayName) {
+    //             //if the name is provided
+    //             if (displayName) {
 
-                    //update the user's name
-                    userFromDB.name = displayName
+    //                 //update the user's name
+    //                 userFromDB.name = displayName
 
-                    await admin.auth().updateUser(res.locals.uid, {
-                        displayName: displayName
-                    });
-                }
+    //                 await admin.auth().updateUser(res.locals.uid, {
+    //                     displayName: displayName
+    //                 });
+    //             }
 
 
-                //finally save the updated user to the DB
-                await userRepo.save(userFromDB)
+    //             //finally save the updated user to the DB
+    //             await userRepo.save(userFromDB)
 
-                //update the user's fireauth account informaiton
-                // await admin.auth().updateUser(res.locals.uid, );
+    //             //update the user's fireauth account informaiton
+    //             // await admin.auth().updateUser(res.locals.uid, );
 
-                return res.status(200).send({ body: 'Successfully updated account information' })
+    //             return res.status(200).send({ body: 'Successfully updated account information' })
 
-            } catch (error) {
-                return handleError(res, error)
-            }
+    //         } catch (error) {
+    //             return handleError(res, error)
+    //         }
 
-       }
+    //    }
 
 
         /*
@@ -331,7 +363,7 @@ export class userController {
 
 
         */
-        async patch(req: Request, res: Response) {
+        async patchUser(req: Request, res: Response) {
 
             //store the uid from req params
             const { uid } = req.params
@@ -354,49 +386,103 @@ export class userController {
             //user is a trainer
             if (res.locals.role == AuthRoles.Trainer) {
 
-                //fetch the uid from the token instead
+                //fetch the uid from the token instead of request param
                 specifiedUID = res.locals.uid
             }
 
+            //user is an admin
             else if (res.locals.role == AuthRoles.Admin) {
+
+                //if the uid is not set on the parameter when called by an admin
+                if (!req.params.uid) {
+                    return res.status(400).send({ message: 'Missing user UID when updating details by admin' })
+                }
 
                 //set the uid to the one passed in from request param
                 specifiedUID = uid
             }
 
 
+            //if any of the required fields are empty
+            // no name in body
+            if (!displayName) {
+                
+                //send 400 error to client
+                return res.status(400).send({ message: 'Missing displayName for user' })
+            }
+
+            if (!email) {
+                
+                //send 400 error to client
+                return res.status(400).send({ message: 'Missing email for user' })
+            }
+
+            if (!role) {
+                
+                //send 400 error to client
+                return res.status(400).send({ message: 'Missing role for user' })
+            }
 
 
+            //firebase account update
+            try {
+
+                //update the user information in fire auth
+                await admin.auth().updateUser(specifiedUID, { displayName, email })
+
+                //check if the user is admin
+                if (res.locals.role == AuthRoles.Admin) {
+
+                    //check if the role string from body is a valid role
+                    //if not return an error
+                    if (!Object.values(AuthRoles).includes(role)) {
+                        return res.status(400).send({ message: 'Role: ' + role + " is not a valid role, must be either: " + AuthRoles.Admin + " or " + AuthRoles.Trainer})
+                    }
+
+                    //if everything is successfull so far, update the role of the user
+
+                    await admin.auth().setCustomUserClaims(specifiedUID, { role })
+
+                }
+
+            } catch (error) {
+                return handleError(res, error)
+            }
             
 
 
-
+            //Database user update
             try {
                 
-
-                if (!uid || !displayName || !email || !role) {
-                    return res.status(400).send({ message: 'Missing fields' })
-                }
-
-                await admin.auth().updateUser(specifiedUID, { displayName, email })
-                await admin.auth().setCustomUserClaims(uid, { role })
-                
-                const user = await admin.auth().getUser(uid)
-
+                //create connection to the server
                 const connection = await connect();
 
-                    const userRepo = connection.getRepository(User);
+                //create a user repository
+                const userRepo = connection.getRepository(User);
 
-                    const updateUser = await userRepo.findOne({UUID: uid});
-                    updateUser.name = displayName
+                //find the user that matches the uid of the "to be updated" user
+                const updateUser = await userRepo.findOne({UUID: specifiedUID});
+                
+                //set the name of the user
+                updateUser.name = displayName
 
+                //save the changes to the DB
+                await userRepo.save(updateUser);
 
-                    await userRepo.save(updateUser);
-
-                return res.status(204).send({ user: this.mapUser(user) })
+                return res.status(200).send({ message: 'Successfully updated user: ' + displayName })
             } catch (err) {
                 return handleError(res, err)
             }
+        }
+
+        /*
+            This function is responsible for deleting users from both fireauth and the db
+            
+            NOTE: if the user token attached to the request has a role of 'user', then they can only delete their own record and account
+                  if the user token attached has a admin role, then they can delete any user using their UIDs
+        */
+        async removeUser(req: Request, res: Response) {
+
         }
 
 
