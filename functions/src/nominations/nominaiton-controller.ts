@@ -6,6 +6,7 @@ import { connect } from '../config';
 //trial date entity
 //import { TrialMeeting } from "../entities/trialDate";
 import { Nomination } from '../entities/nomination'
+import { TrialMeeting } from "../entities/trialDate";
 import { User } from '../entities/user'
 
 //import { Equal} from "typeorm";
@@ -207,6 +208,48 @@ export async function getSpecificNomination (request: Request, response: Respons
     return response.status(200).send(specificNomination);
 
 };
+
+export async function getTrainersAndNominationsCountForMeeting(request: Request, response: Response) {
+
+    const {meetingID} = request.params;
+
+    try {
+
+    const connection = await connect();
+    const nominationRepo = connection.getRepository(Nomination);
+    // const meetingRepo = connection.getRepository(TrialMeeting);
+
+    let groupedAndCounted = await nominationRepo.createQueryBuilder('nomination')
+
+    //join on trial meeting
+    .leftJoin('nomination.trialDate', "trialDate")
+
+    //join on user
+    .leftJoinAndSelect('nomination.user', 'User')
+
+    //select distinct just user name and count of userIDs in nominations as count
+    .select(['DISTINCT(User.name)', 'COUNT(User.userID) AS count'])
+
+    //group by name of the user
+    .groupBy('user.name')
+
+    //only execute for the meeting that matches the meetingID
+    .where('trialDate.meetingID = :id', { id: meetingID })
+
+    //return raw result since it doesnt match an entity
+    .getRawMany()
+
+    
+    
+
+    //send the array to the client
+    return response.status(200).send(groupedAndCounted);
+
+    } catch (error) {
+        return handleError(response, error)
+    }
+
+}
 
 //update specific nomination
 export async function deleteNomination (request: Request, response: Response) {
