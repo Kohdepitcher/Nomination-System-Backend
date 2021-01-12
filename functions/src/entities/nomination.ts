@@ -11,30 +11,35 @@ export class Nomination extends BaseEntity {
     nominationID: number;
 
     //name of the jockey
-    @Column()
+    //can be null since it wont always be provided
+    @Column({ nullable: true })
     jockey: string;
 
     //name of the horse
-    @Column()
+    //cant be null since horse names are required
+    @Column({ nullable: false })
     horseName: string;
 
     //age of the horse
-    @Column()
+    //cant be null since age is required
+    @Column({ nullable: false})
     horseAge: number;
 
     //class of the horse
-    @Column()
+    //cant be null since the class needs to be known
+    @Column({ nullable: false })
     horseClass: string;
 
     //scratching status of the horse
-    @Column()
+    //scratched status cant be null but will have a default value of false upon insertion
+    @Column({ nullable: false})
     isScratched: boolean;
 
-    //Foreign Key
-    // @Column()
-    // trialMeetingID: number;
 
-    //relationships
+
+    /*
+        Relationships
+    */
     @ManyToOne(type => TrialMeeting, trialMeeting => trialMeeting.nominations)
     trialDate: TrialMeeting;
 
