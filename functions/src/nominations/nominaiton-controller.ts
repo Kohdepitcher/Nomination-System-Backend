@@ -6,10 +6,33 @@ import { connect } from '../config';
 //trial date entity
 //import { TrialMeeting } from "../entities/trialDate";
 import { Nomination } from '../entities/nomination'
-import { TrialMeeting } from "../entities/trialDate";
+// import { TrialMeeting } from "../entities/trialDate";
 import { User } from '../entities/user'
 
 //import { Equal} from "typeorm";
+
+export class NominationController {
+
+    //CREATE
+    /*
+        This method is designed to create Nominations for a specific Trial Meeting
+
+        NOTE: This method requires the following in the body
+            Horse Name - Name of the horse
+            Horse Age - How old the horse is
+            Horse Class - The class of the horse
+            Jockey - Name of the jockey ridding the horse
+            Meeting ID - the ID for the meeting that is being nominated for
+
+    */
+   async createNominationForMeeting(request: Request, response: Response) {
+
+    //body
+    const { jockey, horseName, horseAge, horseClass, trialMeetingID } = request.body;
+
+   }
+
+}
 
 //create a trial date
 //requires trial ID, User UUID, horse name, horse age, horse class, jockey
