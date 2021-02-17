@@ -30,6 +30,13 @@ export function routesConfig(app: Application) {
         new userController().getAllUsers
     ]);
 
+    //get all the users that match a role
+    app.get('/users-with-role/:role', [
+        // isAuthenticated,
+        // isAuthorized({ hasRole: ['admin', 'manager'], allowSameUser: true }),
+        new userController().getUsersForRole
+    ]);
+
     // get :id user
     app.get('/users/:uid', [
         isAuthenticated,
