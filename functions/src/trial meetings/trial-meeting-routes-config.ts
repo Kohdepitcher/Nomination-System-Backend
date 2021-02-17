@@ -4,7 +4,7 @@ import { Application } from "express";
 import { isAuthenticated } from "../auth/authenticated";
 import { isAuthorized } from "../auth/authorized";
 
-import { getTrialMeetings, getSpecificTrialMeeting, createTrialMeeting, updateTrialMeeting, deleteTrialMeeting, getTrialMeetingsAfterDate,} from '../trial meetings/trial-meeting-controller';
+import { getTrialMeetings, getSpecificTrialMeeting, updateTrialMeeting, deleteTrialMeeting, getTrialMeetingsAfterDate, TrialMeetingController} from '../trial meetings/trial-meeting-controller';
 
 export function trialRoutesConfig(app: Application) {
     
@@ -12,7 +12,7 @@ export function trialRoutesConfig(app: Application) {
     app.post('/trial-meetings',
        isAuthenticated,
        isAuthorized({ hasRole: ['admin', 'manager'] }),
-       createTrialMeeting
+       new TrialMeetingController().createTrialMeeting
    );
 
     // lists all trial meetings
