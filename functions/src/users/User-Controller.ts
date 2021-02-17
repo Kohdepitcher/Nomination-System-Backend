@@ -256,7 +256,11 @@ export class userController {
             const userRepo = connection.getRepository(User)
             
             //fetch the users with the matching role
-            const allUsersMatchingRole = await userRepo.find({ where: { role: role } })
+            const allUsersMatchingRole = await userRepo.find({ 
+                select: ["userID", "name"],
+                where: { role: role },
+                order: { name: "ASC" }
+            })
             
             //return the results
             return res.status(200).send(allUsersMatchingRole)
