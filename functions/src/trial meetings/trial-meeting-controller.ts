@@ -51,12 +51,16 @@ export class TrialMeetingController {
             return response.status(400).send({ message: 'Missing distance for the jumpouts' })
         }
 
+        // console.log(isNaN(dateFromUTCString(date).getTime()))
+        // console.log(isNaN(dateFromUTCString(closeDate).getTime()))
+        
         //check if dates passed are the correct format
-        if (dateFromUTCString(date) instanceof Date) {
+        //if not, return an 400 status error
+        if (isNaN(dateFromUTCString(date).getTime())) {
             return response.status(400).send({ message: 'Date is not in UTC format' })
         }
 
-        if (dateFromUTCString(closeDate) instanceof Date) {
+        if (isNaN(dateFromUTCString(closeDate).getTime())) {
             return response.status(400).send({ message: 'Close date is not in UTC format' })
         }
         
