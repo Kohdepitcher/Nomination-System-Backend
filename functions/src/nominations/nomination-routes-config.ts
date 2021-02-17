@@ -1,6 +1,8 @@
 import { Application } from "express";
 
-import { getAllNominations, createNominaton, getSpecificNomination, updateNomination, getTrainersAndNominationsCountForMeeting} from '../nominations/nominaiton-controller'
+import { NominationController } from './nominaiton-controller'
+
+import { getSpecificNomination, updateNomination} from '../nominations/nominaiton-controller'
 
 import { isAuthenticated } from "../auth/authenticated";
 import { isAuthorized } from "../auth/authorized";
@@ -13,14 +15,14 @@ export function nominationRoutesConfig(app: Application) {
     app.post('/nominations',
        isAuthenticated,
        isAuthorized({ hasRole: ['admin', 'manager', 'user'] }),
-       createNominaton
+       new NominationController().createNominationForMeeting
    );
 
     // lists all nominations
-    app.get('/nominations', [
+    app.get('/nominations/', [
         isAuthenticated,
         isAuthorized({ hasRole: ['admin', 'manager'] }),
-        getAllNominations
+        new NominationController().getNominationsForMeetingID
     ]);
 
     // get :id nomination
@@ -33,7 +35,7 @@ export function nominationRoutesConfig(app: Application) {
     app.get('/nominations/group-trainers-count/:meetingID', [
         // isAuthenticated,
         // isAuthorized({ hasRole: ['admin', 'manager'], allowSameUser: true }),
-        getTrainersAndNominationsCountForMeeting
+        new NominationController().getTrainersAndNominationsCountForMeeting
     ]);
 
     // updates :id nomination
@@ -43,7 +45,7 @@ export function nominationRoutesConfig(app: Application) {
         updateNomination
     ]);
 
-    // deletes :id nomination
+    // deletes :id nomination 
     // app.delete('/nominations/:nominationId', [
     //     isAuthenticated,
     //     isAuthorized({ hasRole: ['admin', 'manager'] }),
