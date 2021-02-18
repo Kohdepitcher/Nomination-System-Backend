@@ -111,7 +111,6 @@ export class NominationController {
     }
 
     //READ
-
     /*
         Get all nominations for meeting
 
@@ -156,114 +155,200 @@ export class NominationController {
 
    /*
         This method returns all the trainers who have nominated for a jumpout and how many nominations they have made
-
+        
+        NOTE: the following are required in the request parameters
    */
   async getTrainersAndNominationsCountForMeeting(request: Request, response: Response) {
     
-    const { meetingID } = request.params;
+        const { meetingID } = request.params;
 
-    //Throw 400 response errors for required missing query parts
-    if (!meetingID) {
-        return response.status(400).send({ message: 'Missing ID for the jumpouts' })
-    }
+        //Throw 400 response errors for required missing query parts
+        if (!meetingID) {
+            return response.status(400).send({ message: 'Missing ID for the jumpouts' })
+        }
+        
+        try {
+            
+            //connect to the DB
+            const connection = await connect();
+
+            //Get Repos
+            const nominationRepo = connection.getRepository(Nomination);
+            
+            let groupedAndCounted = await nominationRepo.createQueryBuilder('nomination')
+            
+            //join on trial meeting
+            .leftJoin('nomination.trialDate', "trialDate")
+            
+            //join on user
+            .leftJoinAndSelect('nomination.user', 'User')
+            
+            //select distinct just user name and count of userIDs in nominations as count
+            .select(['DISTINCT(User.name)', 'COUNT(User.userID) AS count'])
+            
+            //group by name of the user
+            .groupBy('user.name')
+            
+            //only execute for the meeting that matches the meetingID
+            .where('trialDate.meetingID = :id', { id: meetingID })
+            
+            //filter out scratched nominations
+            .andWhere('nomination.isScratched = false')
+            
+            //return raw result since it doesnt match an entity
+            .getRawMany()
+            
+            //send the array to the client
+            return response.status(200).send(groupedAndCounted);
+            
+        } catch (error) {
+            return handleError(response, error)
+        }
     
-    try {
-        
-        const connection = await connect();
-        const nominationRepo = connection.getRepository(Nomination);
-        // const meetingRepo = connection.getRepository(TrialMeeting);
-        
-        let groupedAndCounted = await nominationRepo.createQueryBuilder('nomination')
-        
-        //join on trial meeting
-        .leftJoin('nomination.trialDate', "trialDate")
-        
-        //join on user
-        .leftJoinAndSelect('nomination.user', 'User')
-        
-        //select distinct just user name and count of userIDs in nominations as count
-        .select(['DISTINCT(User.name)', 'COUNT(User.userID) AS count'])
-        
-        //group by name of the user
-        .groupBy('user.name')
-        
-        //only execute for the meeting that matches the meetingID
-        .where('trialDate.meetingID = :id', { id: meetingID })
-        
-        //filter out scratched nominations
-        .andWhere('nomination.isScratched = false')
-        
-        //return raw result since it doesnt match an entity
-        .getRawMany()
-        
-        //send the array to the client
-        return response.status(200).send(groupedAndCounted);
-        
-    } catch (error) {
-        return handleError(response, error)
     }
-    
-}
+
+    //UPDATE
+    /*
+        This function is designed to update a nomination
+
+        NOTE: The following query parameters are required
+            Nomination ID - the ID of the nomination that is being updated
+
+        NOTE: The following body elements are required
+            Jockey - the name of the jockey
+            Horse Name - the name of the horse
+            Horse Age - the age of the horse
+            Horse Class - the class of the horse
+            isScratched - the scratching status of the horse
+    */
+   async updateNomination(request: Request, response: Response) {
+
+        //query parameters
+        const { nominationID } = request.params
+
+        //Throw 400 response error for missing NominationID
+        if (!nominationID) {
+            return response.status(400).send({ message: 'Missing name for the horse' })
+        }
+        
+        //body elements
+        const { jockey, horseName, horseAge, horseClass, isScratched } = request.body;
+
+        //Throw 400 response errors for required missing body parts
+        // if (!jockey) {
+        //     return response.status(400).send({ message: 'Missing jockey for the horse' })
+        // }
+
+        if (!horseName) {
+            return response.status(400).send({ message: 'Missing name for the horse' })
+        }
+        
+        if (!horseAge) {
+            return response.status(400).send({ message: 'Missing age for the horse: ' + horseName })
+        }
+        
+        if (!horseClass) {
+            return response.status(400).send({ message: 'Missing class for the horse: ' + horseName })
+        }
+        
+        if (isScratched == null) {
+            return response.status(400).send({ message: 'Missing scratched status for the horse: ' + horseName })
+        }
+
+        //check that horse age is a number
+        if (isNaN(horseAge)) {
+            return response.status(400).send({ message: 'Age is not a numeric value for the horse: ' + horseName })
+        }
+
+        //if jockey is null, set jockeyname to "" otherwise set it to the value of jockey
+        const JockyName = (jockey != null) ? jockey : "" 
+
+        try {
+
+            //create DB Connectiona 
+            const connection = await connect();
+            
+            //Repos
+            const nominationRepo = connection.getRepository(Nomination);
+
+            const updatedNomination = await nominationRepo
+            .createQueryBuilder()
+            .update(Nomination)
+
+            //update the fields of the nomination
+            .set({ jockey: JockyName, horseName: horseName, horseAge: horseAge, horseClass: horseClass, isScratched: isScratched })
+
+            //where the nomination id equals the nomination ID passed in from the query parameters
+            .where("nominationID = :id", { id: nominationID })
+            .execute();
+
+            return response.status(200).send(updatedNomination)
+
+        } catch (error) {
+            return handleError(response, error)
+        }
+
+   }
     
 }
 
 //create a trial date
 //requires trial ID, User UUID, horse name, horse age, horse class, jockey
-export async function createNominaton (request: Request, response: Response) {
+// export async function createNominaton (request: Request, response: Response) {
     
-    const { jockey, horseName, horseAge, horseClass, trialMeetingID } = request.body;
+//     const { jockey, horseName, horseAge, horseClass, trialMeetingID } = request.body;
     
-    if ( !jockey || !horseName || !horseAge || !horseClass || !trialMeetingID) {
-        return response.status(400).send({ message: 'Missing fields' })
-    }
+//     if ( !jockey || !horseName || !horseAge || !horseClass || !trialMeetingID) {
+//         return response.status(400).send({ message: 'Missing fields' })
+//     }
     
-    const newNomination = new Nomination();
+//     const newNomination = new Nomination();
     
-    // try {
+//     // try {
     
-    // } catch (error) {
+//     // } catch (error) {
     
-    // }
+//     // }
     
-    try {
+//     try {
         
-        //create a new DB connection
-        const connection = await connect();
+//         //create a new DB connection
+//         const connection = await connect();
         
-        //get the nomination repo
-        const nominationRepo = connection.getRepository(Nomination);
+//         //get the nomination repo
+//         const nominationRepo = connection.getRepository(Nomination);
         
-        //get the user repository
-        const userRepo = connection.getRepository(User)
-        .createQueryBuilder("user")
-        .where("user.UUID = :UUID", {UUID: response.locals.uid})
-        .getOne();
-        
-        
+//         //get the user repository
+//         const userRepo = connection.getRepository(User)
+//         .createQueryBuilder("user")
+//         .where("user.UUID = :UUID", {UUID: response.locals.uid})
+//         .getOne();
         
         
-        newNomination.jockey = jockey;
-        newNomination.horseName = horseName;
-        newNomination.horseAge = horseAge;
-        newNomination.horseClass = horseClass;
         
-        //foreign key for a trial meeting primary key
-        newNomination.trialDate = trialMeetingID;
         
-        //foreign key for the user
-        newNomination.user = await userRepo;
+//         newNomination.jockey = jockey;
+//         newNomination.horseName = horseName;
+//         newNomination.horseAge = horseAge;
+//         newNomination.horseClass = horseClass;
         
-        //save the nomination in the system
-        const savedNomination = await nominationRepo.save(newNomination);
+//         //foreign key for a trial meeting primary key
+//         newNomination.trialDate = trialMeetingID;
         
-        return response.status(200).send(savedNomination);
+//         //foreign key for the user
+//         newNomination.user = await userRepo;
         
-    } catch (error) {
-        return handleError(response, error)
-        console.log(error);
-    }
+//         //save the nomination in the system
+//         const savedNomination = await nominationRepo.save(newNomination);
+        
+//         return response.status(200).send(savedNomination);
+        
+//     } catch (error) {
+//         return handleError(response, error)
+//         console.log(error);
+//     }
     
-};
+// };
 
 //update specific nomination
 export async function updateNomination (request: Request, response: Response) {
