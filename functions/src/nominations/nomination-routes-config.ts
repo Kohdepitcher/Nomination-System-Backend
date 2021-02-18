@@ -2,7 +2,7 @@ import { Application } from "express";
 
 import { NominationController } from './nominaiton-controller'
 
-import { getSpecificNomination, updateNomination} from '../nominations/nominaiton-controller'
+import { getSpecificNomination } from '../nominations/nominaiton-controller'
 
 import { isAuthenticated } from "../auth/authenticated";
 import { isAuthorized } from "../auth/authorized";
@@ -39,10 +39,10 @@ export function nominationRoutesConfig(app: Application) {
     ]);
 
     // updates :id nomination
-    app.patch('/nominations/:nominationId', [
+    app.patch('/nominations/:nominationID', [
         isAuthenticated,
         isAuthorized({ hasRole: ['admin', 'manager', 'user'], allowSameUser: true }),
-        updateNomination
+        new NominationController().updateNomination
     ]);
 
     // deletes :id nomination 
