@@ -460,7 +460,7 @@ export async function getTrialMeetingsAfterDate(request: Request, response: Resp
 
     // Get all rows
     const allTrialMeetingsAfterDate = await TrialMeetingRepo.createQueryBuilder('trialMeeting')
-        .where('trialMeeting.date => :date', { date: new Date(Date.parse(afterDate)) })//{ date: (this.afterDate, 'YYYY-MM-DD HH:MM:SS')}) //new Date(Date.parse(afterDate).)})
+        .where('trialMeeting.date => :date', { date: dateFromUTCString(afterDate) })//{ date: (this.afterDate, 'YYYY-MM-DD HH:MM:SS')}) //new Date(Date.parse(afterDate).)})
         .limit(30)
         .getMany()
 
