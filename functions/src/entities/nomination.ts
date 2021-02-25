@@ -35,7 +35,13 @@ export class Nomination extends BaseEntity {
     @Column({ nullable: false})
     isScratched: boolean;
 
+    @Column({ nullable: false})
+    fieldNumber: number;
 
+    @Column({ nullable: false})
+    barrierPosition: number;
+
+    
 
     /*
         Relationships
@@ -61,6 +67,9 @@ export class Nomination extends BaseEntity {
         this.modifiedAt = new Date();
 
         this.isScratched = false;
+
+        this.barrierPosition = 0;
+        this.fieldNumber = 0;
     }
 
     //modify data before updating
