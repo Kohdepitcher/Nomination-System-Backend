@@ -161,7 +161,86 @@ export class userController {
             
             //name is the display name
             newUser.name = displayName;
+
+            newUser.role = role;
             
+            //save the user in DB
+            await repo.save(newUser);
+            
+            //fetch the user record from fireauth that matches the uid
+            const user = await admin.auth().getUser(uid)
+            
+            
+            //send success message to cleint
+            return res.status(200).send({ user: mapUser(user) })
+        } catch (err) {
+            return handleError(res, err)
+        }
+    }
+
+    //this func is for signing up users from the front end
+    async signUpUser(req: Request, res: Response) {
+
+        //create a constant to store the request body
+        const { displayName, email, password } = req.body
+        
+        try {
+            
+            //default role
+            const role = AuthRoles.Trainer;
+            
+            //if any of the required fields are empty
+            if (!displayName) {
+                
+                //send 400 error to client
+                return res.status(400).send({ message: 'Missing name in body' })
+            }
+            
+            if (!email) {
+                
+                //send 400 error to client
+                return res.status(400).send({ message: 'Missing email in body' })
+            }
+
+            if (!password) {
+                
+                //send 400 error to client
+                return res.status(400).send({ message: 'Missing password in body' })
+            }
+            
+            
+            //create and store the user
+            const { uid } = await admin.auth().createUser({
+                
+                //set the name of the user
+                displayName,
+                
+                //set a random password
+                password: password,
+                
+                //set the email of the user
+                email
+            })
+            
+            //set the custom role claim
+            await admin.auth().setCustomUserClaims(uid, { role })
+            
+            //create new connection to DB
+            const connection = await connect();
+            
+            //get the user repository
+            const repo = connection.getRepository(User);
+            
+            //create a new user
+            const newUser = new User();
+            
+            //parse data from func parameters
+            //uuid from fireauth
+            newUser.UUID = uid;
+            
+            //name is the display name
+            newUser.name = displayName;
+
             newUser.role = role;
             
             //save the user in DB
@@ -257,7 +336,7 @@ export class userController {
             
             //fetch the users with the matching role
             const allUsersMatchingRole = await userRepo.find({ 
-                select: ["userID", "name"],
+                select: ["userID", "name", "UUID"],
                 where: { role: role },
                 order: { name: "ASC" }
             })
@@ -320,6 +399,62 @@ export class userController {
         } catch (err) {
             return handleError(res, err)
         }
+    }
+
+    /*
+        This function is used to patch a users DB recored after signing up
+        this is because sign up with email password doesnt allow for other profile data to be set as well and theres no triggers for update profile
+
+    */
+
+    async updateAfterSignUp(req: Request, res: Response) {
+
+
+        //store the uid from the request parameters
+        // const { uid } = req.params
+        
+        // if (!uid) {
+            
+        //     //send 400 error to client
+        //     return res.status(400).send({ message: 'Missing uid in request params' })
+        // }
+
+        const { displayName } = req.body;
+
+        if (!displayName) {
+            
+            //send 400 error to client
+            return res.status(400).send({ message: 'Missing displayName in request params' })
+        }
+    
+            try {
+    
+                const connection = await connect();
+                const userRepo = connection.getRepository(User); 
+    
+                //firest fetch the user from the db
+                //use the uid from the auth token
+                const userFromDB = await userRepo.findOne({UUID: res.locals.uid})
+    
+                //update the user's name
+                userFromDB.name = displayName
+
+                //update the display name on firebase
+                await admin.auth().updateUser(res.locals.uid, {
+                    displayName: displayName
+                });
+                
+    
+    
+                //finally save the updated user to the DB
+                await userRepo.save(userFromDB)
+    
+                return res.status(200).send({ body: 'Successfully updated account information' })
+    
+            } catch (error) {
+                return handleError(res, error)
+            }
+
     }
     
     /*
