@@ -16,6 +16,10 @@ export function routesConfig(app: Application) {
        new userController().createUser
     ]);
 
+    app.post('/users/sign_up', [
+        new userController().signUpUser
+     ]);
+
      //DONT USE - FOR TESTING ONLY
      app.post('/user-in-db/', [
         isAuthenticated,
@@ -32,8 +36,8 @@ export function routesConfig(app: Application) {
 
     //get all the users that match a role
     app.get('/users-with-role/:role', [
-        // isAuthenticated,
-        // isAuthorized({ hasRole: ['admin', 'manager'], allowSameUser: true }),
+        isAuthenticated,
+        isAuthorized({ hasRole: ['admin', 'manager'], allowSameUser: true }),
         new userController().getUsersForRole
     ]);
 
@@ -56,6 +60,12 @@ export function routesConfig(app: Application) {
     //     isAuthorized({ hasRole: [AuthRoles.Admin, AuthRoles.Trainer], allowSameUser: true}),
     //     new userController().updateUser
     // ])
+
+    app.patch('/users/patch_after_signup/', [
+        isAuthenticated,
+        // isAuthorized({ hasRole: [AuthRoles.Admin, AuthRoles.Trainer], allowSameUser: true}),
+        new userController().updateAfterSignUp
+    ])
 
     // deletes :id user
     app.delete('/users/:uid', [
