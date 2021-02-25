@@ -15,6 +15,8 @@ export function trialRoutesConfig(app: Application) {
        new TrialMeetingController().createTrialMeeting
    );
 
+   //TODO: turn on secruity for this route
+
     // lists all trial meetings
     app.get('/trial-meetings', [
         // isAuthenticated,
@@ -29,6 +31,7 @@ export function trialRoutesConfig(app: Application) {
         getSpecificTrialMeeting
     ]);
 
+    //TODO: create func to get stuff for the home page
 
      // get trial meetings after date
      app.get('/trial-meetings/specific?afterDate', [
@@ -50,4 +53,4 @@ export function trialRoutesConfig(app: Application) {
         isAuthorized({ hasRole: ['admin', 'manager'] }),
         deleteTrialMeeting
     ]);
- }
+ } 
