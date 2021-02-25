@@ -10,7 +10,7 @@ export class User extends BaseEntity {
     userID: number;
 
     //name of the user
-    @Column({ nullable: false })
+    @Column({ nullable: false, default: 'Not Set' })
     name: string;
 
     //links the firebase auth user account to matching user entry in the db
