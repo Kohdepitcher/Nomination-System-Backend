@@ -18,6 +18,12 @@ export function nominationRoutesConfig(app: Application) {
        new NominationController().createNominationForMeeting
    );
 
+   app.post('/nominations/on-behalf-of-trainer',
+       isAuthenticated,
+       isAuthorized({ hasRole: ['admin', 'manager', 'user'] }),
+       new NominationController().createNominationForMeetingOnBehalfOfTrainer
+   );
+
     // lists all nominations
     app.get('/nominations/', [
         isAuthenticated,
